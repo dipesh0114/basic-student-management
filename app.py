@@ -1,86 +1,98 @@
-# This is simplest Student data management program in python
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
 
-# Create class "Student"
-class Student:
+# DB Connection
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="yourpassword",  # Change this
+    database="student_db"
+)
+cursor = conn.cursor()
 
-  # Constructor
-    def __init__(self, name, rollno, m1, m2):
-        self.name = name
-        self.rollno = rollno
-        self.m1 = m1
-        self.m2 = m2
+# GUI App
+root = tk.Tk()
+root.title("Student Management System")
+root.geometry("500x500")
 
-    # Function to create and append new student
-    def accept(self, Name, Rollno, marks1, marks2):
-  
-  # use ' int(input()) ' method to take input from user
-        ob = Student(Name, Rollno, marks1, marks2)
-        ls.append(ob)
+# Form labels and fields
+tk.Label(root, text="Name").grid(row=0, column=0, padx=10, pady=5)
+tk.Label(root, text="Age").grid(row=1, column=0, padx=10, pady=5)
+tk.Label(root, text="Grade").grid(row=2, column=0, padx=10, pady=5)
+tk.Label(root, text="ID (for Update/Delete/Search)").grid(row=3, column=0, padx=10, pady=5)
 
-    # Function to display student details
-    def display(self, ob):
-        print("Name : ", ob.name)
-        print("RollNo : ", ob.rollno)
-        print("Marks1 : ", ob.m1)
-        print("Marks2 : ", ob.m2)
-        print("\n")
+name_entry = tk.Entry(root)
+age_entry = tk.Entry(root)
+grade_entry = tk.Entry(root)
+id_entry = tk.Entry(root)
 
-    # Search Function
-    def search(self, rn):
-        for i in range(ls.__len__()):
-            if(ls[i].rollno == rn):
-                return i
+name_entry.grid(row=0, column=1)
+age_entry.grid(row=1, column=1)
+grade_entry.grid(row=2, column=1)
+id_entry.grid(row=3, column=1)
 
-    # Delete Function
-    def delete(self, rn):
-        i = obj.search(rn)
-        del ls[i]
+# Functions
+def add_student():
+    name = name_entry.get()
+    age = age_entry.get()
+    grade = grade_entry.get()
+    if name and age and grade:
+        cursor.execute("INSERT INTO students (name, age, grade) VALUES (%s, %s, %s)", (name, age, grade))
+        conn.commit()
+        messagebox.showinfo("Success", "Student added.")
+    else:
+        messagebox.showerror("Error", "Fill all fields!")
 
-    # Update Function
-    def update(self, rn, No):
-        i = obj.search(rn)
-        roll = No
-        ls[i].rollno = roll
+def view_students():
+    cursor.execute("SELECT * FROM students")
+    rows = cursor.fetchall()
+    result = "\n".join([f"ID: {r[0]}, Name: {r[1]}, Age: {r[2]}, Grade: {r[3]}" for r in rows])
+    messagebox.showinfo("All Students", result or "No records found.")
 
+def search_student():
+    sid = id_entry.get()
+    if sid:
+        cursor.execute("SELECT * FROM students WHERE id=%s", (sid,))
+        row = cursor.fetchone()
+        if row:
+            messagebox.showinfo("Student Found", f"ID: {row[0]}, Name: {row[1]}, Age: {row[2]}, Grade: {row[3]}")
+        else:
+            messagebox.showwarning("Not Found", "Student ID not found.")
+    else:
+        messagebox.showerror("Error", "Enter Student ID.")
 
-# Create a list to add Students
-ls = []
-# an object of Student class
-obj = Student('', 0, 0, 0)
+def update_student():
+    sid = id_entry.get()
+    name = name_entry.get()
+    age = age_entry.get()
+    grade = grade_entry.get()
+    if sid and name and age and grade:
+        cursor.execute("UPDATE students SET name=%s, age=%s, grade=%s WHERE id=%s", (name, age, grade, sid))
+        conn.commit()
+        messagebox.showinfo("Updated", "Student record updated.")
+    else:
+        messagebox.showerror("Error", "Fill all fields including ID.")
 
-print("\nOperations used, ")
-print("\n1.Accept Student details\n2.Display Student Details\n3.Search Details of a Student\n4.Delete Details of Student\n5.Update Student Details\n6.Exit")
+def delete_student():
+    sid = id_entry.get()
+    if sid:
+        cursor.execute("DELETE FROM students WHERE id=%s", (sid,))
+        conn.commit()
+        messagebox.showinfo("Deleted", "Student deleted.")
+    else:
+        messagebox.showerror("Error", "Enter Student ID.")
 
-# ch = int(input("Enter choice:"))
-# if(ch == 1):
-obj.accept("A", 1, 100, 100)
-obj.accept("B", 2, 90, 90)
-obj.accept("C", 3, 80, 80)
+# Buttons
+tk.Button(root, text="Add Student", command=add_student).grid(row=5, column=0, pady=10)
+tk.Button(root, text="View All", command=view_students).grid(row=5, column=1)
+tk.Button(root, text="Search", command=search_student).grid(row=6, column=0)
+tk.Button(root, text="Update", command=update_student).grid(row=6, column=1)
+tk.Button(root, text="Delete", command=delete_student).grid(row=7, column=0, columnspan=2)
 
-# elif(ch == 2):
-print("\n")
-print("\nList of Students\n")
-for i in range(ls.__len__()):
-    obj.display(ls[i])
+# Run the app
+root.mainloop()
 
-# elif(ch == 3):
-print("\n Student Found, ")
-s = obj.search(2)
-obj.display(ls[s])
-
-# elif(ch == 4):
-obj.delete(2)
-print(ls.__len__())
-print("List after deletion")
-for i in range(ls.__len__()):
-    obj.display(ls[i])
-
-# elif(ch == 5):
-obj.update(3, 2)
-print(ls.__len__())
-print("List after updation")
-for i in range(ls.__len__()):
-    obj.display(ls[i])
-
-# else:
-print("Thank You !")
+# Close DB connection on exit
+cursor.close()
+conn.close()
